@@ -20,7 +20,7 @@ public class MockExternalController {
     @GetMapping("/{eventId}")
     public ResponseEntity<EventExternalApiResponse> getEventScore(@PathVariable String eventId) {
         // Simulate some random scores
-        String score = random.nextInt(5) + ":" + random.nextInt(5);
+        String score = random.nextInt(10) + ":" + random.nextInt(10);
         EventExternalApiResponse response = new EventExternalApiResponse();
         response.setEventId(eventId);
         response.setCurrentScore(score);

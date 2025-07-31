@@ -22,7 +22,7 @@ public class EventScheduler {
     private final KafkaProducerService kafkaProducerService;
 
     // 10 seconds
-    @Value("${app.polling.interval.seconds:10}")
+    @Value("${app.polling.interval.seconds}")
     private long pollingIntervalSeconds;
 
     public EventScheduler(ExternalApiService externalApiServiceClient, KafkaProducerService kafkaProducerService) {
@@ -36,15 +36,13 @@ public class EventScheduler {
     @PostConstruct
     public void init() {
         taskScheduler.initialize();
-        // The value will be available here because @Value injection happens before @PostConstruct
         log.info("Event Polling Scheduler initialized with polling interval: {} seconds", pollingIntervalSeconds);
     }
 
     public void startScheduler(String eventId) {
-        // start schedule if it's not started already
         scheduledTasks.computeIfAbsent(eventId, k -> {
             log.info("Scheduling polling for eventId: {}", eventId);
-            return taskScheduler.scheduleAtFixedRate(() -> fetchAndPublishEventData(eventId), Duration.ofSeconds(pollingIntervalSeconds));
+            return taskScheduler.scheduleAtFixedRate(() -> fetchAndSendEventData(eventId), Duration.ofSeconds(pollingIntervalSeconds));
         });
     }
 
@@ -56,19 +54,15 @@ public class EventScheduler {
         }
     }
 
-    public void fetchAndPublishEventData(String eventId) {
+    public void fetchAndSendEventData(String eventId) {
         log.debug("Schedule event: {}", eventId);
-        try {
-            externalApiServiceClient.getEventScore(eventId)
-                    .doOnSuccess(eventExternalApi -> {
-                        log.debug("Received API response for event {}: {}", eventId, eventExternalApi);
-                        kafkaProducerService.publish(eventExternalApi);
-                    })
-                    .doOnError(error -> log.error("Error polling event {}: {}", eventId, error.getMessage()))
-                    .subscribe();
-        } catch (Exception e) {
-            log.error("Unexpected error during scheduling for event {}: {}", eventId, e.getMessage(), e);
-        }
+        externalApiServiceClient.getEventScore(eventId)
+            .doOnSuccess(eventExternalApi -> {
+                log.debug("Received API response for event {}: {}", eventId, eventExternalApi);
+                kafkaProducerService.sendMessage(eventExternalApi);
+            })
+            .doOnError(error -> log.error("Error polling event {}: {}", eventId, error.getMessage()))
+            .subscribe();
     }
 
     @PreDestroy

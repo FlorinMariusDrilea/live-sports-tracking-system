@@ -18,7 +18,7 @@ public class ExternalApiService {
     private String externalApiUrl;
 
     public ExternalApiService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("").build();
+        this.webClient = webClientBuilder.baseUrl(externalApiUrl).build();
     }
 
     public Mono<EventExternalApiResponse> getEventScore(String eventId) {
