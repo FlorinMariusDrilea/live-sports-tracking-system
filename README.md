@@ -19,7 +19,7 @@ A Java-based microservice (built with Spring Boot) for tracking live sports even
 - Docker
 - Kafka (can be run via Docker Compose)
 
-## ⚙Design Summary
+## Design Summary
 
 - **Microservice architecture** – For independent scaling and deployment
 - **Scheduled polling** – Polls external REST API every 10 seconds
@@ -70,7 +70,7 @@ docker-compose down
 mvn clean install
 ```
 
-## ▶️ Running the Application
+## ▶Running the Application
 
 Start the Spring Boot app:
 ```bash
@@ -78,7 +78,7 @@ mvn spring-boot:run
 ```
 Or directly from the main class `LiveSportsTrackingSystemApplication`.
 
-## 🧾 API Usage
+## API Usage
 
 ### 1. Start Tracking an Event
 ```bash
