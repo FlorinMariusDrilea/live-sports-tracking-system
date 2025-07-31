@@ -1,120 +1,121 @@
-# live-sports-tracking-system
-A Java-based microservice (using Spring Boot) that tracks live sports events in real time. It polls an external REST API every 10 seconds, transforms the data, and sends it to a Kafka topic for downstream consumption.
+# Live Sports Tracking System
+
+A Java-based microservice (built with Spring Boot) for tracking live sports events in real time. It polls an external REST API at fixed intervals (default: every 10 seconds), transforms the data, and sends it to a Kafka topic for downstream consumption.
 
 ## Technologies Used
 
-* **Spring Boot**: The core framework for building the application.
-* **Apache Kafka**: Used for building real-time data pipelines and streaming. Event updates are sent to a Kafka topic.
-* **WebClient**: For asynchronous and non-blocking communication with the external sports API.
-* **Lombok**: Reduces boilerplate code (e.g., getters, setters, constructors).
-* **Maven**: Dependency management and build automation.
-* **Docker & Docker Compose**: For local development environment setup, particularly for Kafka and ZooKeeper.
+- **Spring Boot** – Core framework for microservices
+- **Apache Kafka** – Real-time messaging and event streaming
+- **WebClient** – Asynchronous, non-blocking HTTP client
+- **Maven** – Build and dependency management
+- **Docker & Docker Compose** – Local development environment
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Prerequisites
 
-* Java Development Kit (JDK) 17
-* Maven 3.6.0
-* Docker
-* A running Kafka instance (Docker Compose as described below)
+- Java 17
+- Maven
+- Docker
+- Kafka (can be run via Docker Compose)
 
-### Design Choice Summary
-Microservice architecture type -> chosen for scalability, allowing the event status tracking functionality to operate and scale alone
-Used scheduling to get data -> allowing interacting with the external REST APIs used
-Kafka -> used for real-time data producing messages into topics / provide message durability for downstream systems
-Spring WebClient -> used for non blocking, asynchronous HTTP communication
-In-memory ConcurrentHashMap -> provides high-performance and thread-safe storage
+## ⚙Design Summary
 
-### Local Development Setup
+- **Microservice architecture** – For independent scaling and deployment
+- **Scheduled polling** – Polls external REST API every 10 seconds
+- **Kafka** – Durable and real-time event delivery
+- **WebClient** – Non-blocking API communication
+- **ConcurrentHashMap** – Thread-safe in-memory task tracking
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/florin-marius-drilea/live-sports-tracking-system.git](https://github.com/florin-marius-drilea/live-sports-tracking-system.git)
-    cd live-sports-tracking-system
-    ```
+## Local Setup
 
-2.  **Configure `application.properties`:**
-    Ensure your `src/main/resources/application.properties` file is configured correctly. Key properties include:
-    ```properties
-    spring.application.name=live-sports-tracking-system
-    server.port=8080
+### 1. Clone the repository
+```bash
+git clone https://github.com/florin-marius-drilea/live-sports-tracking-system.git
+cd live-sports-tracking-system
+```
 
-    app.polling.interval.seconds=10
-    app.kafka.topic.sports-events=event-updates-topic # Ensure this matches your KafkaProducerService
+### 2. Configure `application.properties`
 
-    spring.kafka.bootstrap-servers=localhost:9092
-    spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
-    spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
+Update `src/main/resources/application.properties`:
+```properties
+spring.application.name=live-sports-tracking-system
+server.port=8080
 
-    logging.level.root=INFO
-    logging.level.com.sports.livesportstrackingsystem=DEBUG
+app.polling.interval.seconds=10
+app.kafka.topic.sports-events=event-updates-topic
 
-    external.api.url=http://localhost:8080/mock-event-api/{eventId}
-    ```
+spring.kafka.bootstrap-servers=localhost:9092
+spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
 
-3.  **Run Kafka Locally with Docker Compose:**
-    Before starting the Spring Boot application, you need a running Kafka broker and ZooKeeper. Use the provided `docker-compose.yml` file:
-    ```bash
-    docker-compose up -d
-    ```
-    This will start ZooKeeper and Kafka containers.
+logging.level.root=INFO
+logging.level.com.sports.livesportstrackingsystem=DEBUG
 
-    Tear down docker / kafka
-    ```bash
-    docker-compose down
-    ```
+external.api.url=http://localhost:8080/mock-event-api/{eventId}
+```
 
-4.  **Build the Project:**
-    ```bash
-    mvn clean install
-    ```
+### 3. Start Kafka (with ZooKeeper)
+```bash
+docker-compose up -d
+```
 
-### Running the Application
+Stop containers:
+```bash
+docker-compose down
+```
 
-After building, you can run the Spring Boot application:
+### 4. Build the project
+```bash
+mvn clean install
+```
 
+## ▶️ Running the Application
+
+Start the Spring Boot app:
 ```bash
 mvn spring-boot:run
 ```
-or start it from LiveSportsTrackingSystemApplication
+Or directly from the main class `LiveSportsTrackingSystemApplication`.
 
-### How to use it
+## 🧾 API Usage
 
-Once the app is up and running - you can interact with sports events and keep track of it.
-The app will automatically poll an external API and publish updates to Kafka.
-
-1. Start Tracking a Live Event
-- use curl in terminal for example (use NOT_LIVE to stop tracking an event - also stop de scheduling happening every 10 seconds)
+### 1. Start Tracking an Event
 ```bash
 curl -X POST http://localhost:8080/events/status \
 -H "Content-Type: application/json" \
 -d '{
-"eventId": "football-match-123",
-"status": "LIVE"
+  "eventId": "football-match-123",
+  "status": "LIVE"
 }'
 ```
 
-2. Verify Kafka Messages 
-```
-docker exec -it kafka /bin/bash 
-kafka-console-consumer --bootstrap-server localhost:9092 --topic {sports-events-topic} --from-beginning
+To **stop** tracking:
+- Send the same request with `"status": "NOT_LIVE"`
+
+### 2. View Kafka Messages
+```bash
+docker exec -it kafka /bin/bash
+kafka-console-consumer --bootstrap-server localhost:9092 --topic event-updates-topic --from-beginning
 ```
 
-3. Observe application logs
-   - when scheduling starts/ stops
-   - each api call made
-   - responses received from api
-   - when sending messages to kafka topic
-   - observe any errors that occur
+### 3. Application Logging
 
-Run Tests
+Monitor logs for:
+- Scheduled polling events
+- External API calls and responses
+- Kafka message production
+- Any errors
+
+## Running Tests
+
 ```bash
 mvn test
-``` 
+```
 
+Includes:
+- Unit tests for service, and Kafka layers
+- Integration tests for event tracking and message publishing
 
 ### AI Tools used
 During this project I've used ChatGPT and Github Copilot - mainly for testing and code reviews.
@@ -147,6 +148,9 @@ public void fetchAndSendEventData(String eventId) {
 private final ConcurrentHashMap<String, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
 ```
 
-Used GitHub Copilot to generate unit tests especially for Controller / Service and Kafka classes to test functionality developed quicker.
+Used GitHub Copilot to generate unit tests and integration especially for Service and Kafka classes to test functionality developed quicker.
 Used to cover Status Updates, Scheduling Calls and error conditions in EventServiceIntegrationTests and EventServiceTest
 Sending Messages to kafka as well tested in KafkaProducerServiceTest (success and fail)
+
+ChatGPT was also used to review / improve the documentation before submitting it and 
+also to review and improve the docker-compose.yaml file which is used to start a kafka instance.
